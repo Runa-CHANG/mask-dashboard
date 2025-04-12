@@ -1,0 +1,24 @@
+# Python cache
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# 虛擬環境
+venv/
+env/
+ENV/
+.yolov8/
+
+# VS Code 設定
+.vscode/
+
+# 系統檔
+.DS_Store
+Thumbs.db
+
+# Jupyter/其他暫存
+.ipynb_checkpoints/
+
+# dotenv（可能包含 API Key 等機密資訊）
+.env

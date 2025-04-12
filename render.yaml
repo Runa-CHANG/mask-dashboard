@@ -1,0 +1,9 @@
+services:
+  - type: web
+    name: mask-dashboard
+    env: python
+    region: singapore  # 可選：部署區域，根據你位置改成 frankfurt、oregon 等
+    buildCommand: pip install -r requirements.txt
+    startCommand: gunicorn dash_app:app
+    plan: free
+    autoDeploy: true
