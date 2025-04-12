@@ -127,5 +127,7 @@ def run_dash(shared_data):
 
         return pie, bar, df.to_dict('records'), summary_table
 
-    app.run(debug=False, port=8050, use_reloader=False)
+    if __name__ == "__main__":
+        app.run(debug=False, host="0.0.0.0", port=10000)
+
 
