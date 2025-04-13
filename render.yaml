@@ -4,10 +4,18 @@ services:
     env: python
     region: singapore
     buildCommand: pip install -r requirements.txt
-    startCommand: python dash_app.py
+    startCommand: gunicorn dash_app:app --bind 0.0.0.0:$PORT
     envVars:
       - key: PORT
         value: 10000
+      - key: DB_HOST
+        value: your-db-host
+      - key: DB_NAME
+        value: your-db-name
+      - key: DB_USER
+        value: your-username
+      - key: DB_PASSWORD
+        value: your-password
     plan: free
     autoDeploy: true
 
