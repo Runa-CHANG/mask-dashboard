@@ -1,13 +1,16 @@
 # db_config.py
-import psycopg2
-from psycopg2.extras import RealDictCursor
 import os
+import psycopg2
+from dotenv import load_dotenv
+
+# 載入 .env 檔案的環境變數
+load_dotenv()
 
 def get_connection():
     return psycopg2.connect(
-        dbname="mask_stats",
-        user="mask_user",
-        password="xZSEGWCTnUZVpVQr5p1k74dO5CUC9lZL",
-        host="dpg-cvu667pr0fns73e595ug-a.oregon-postgres.render.com",
-        port="5432"
+        host=os.getenv("DB_HOST"),
+        port=os.getenv("DB_PORT"),
+        dbname=os.getenv("DB_NAME"),
+        user=os.getenv("DB_USER"),
+        password=os.getenv("DB_PASSWORD")
     )
