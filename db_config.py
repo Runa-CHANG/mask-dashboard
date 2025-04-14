@@ -5,10 +5,9 @@ import os
 
 def get_connection():
     return psycopg2.connect(
-        host=os.getenv("DB_HOST"),
-        port="5432",
-        dbname=os.getenv("DB_NAME"),
-        user=os.getenv("DB_USER"),
-        password=os.getenv("DB_PASSWORD"),
-        cursor_factory=RealDictCursor
+        dbname="mask_stats",
+        user="mask_user",
+        password="xZSEGWCTnUZVpVQr5p1k74dO5CUC9lZL",
+        host="dpg-cvu667pr0fns73e595ug-a.oregon-postgres.render.com",
+        port="5432"
     )
