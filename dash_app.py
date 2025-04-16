@@ -48,11 +48,72 @@ def fetch_data():
 
 # 統計圖與卡片 layout
 def layout_dashboard(df, selected_time):
+    if df.empty:
+        # 預設資料（全為 0）
+        pie_fig = px.pie(
+            names=["With_Mask", "Without_Mask", "Incorrectly_Worn_Mask", "Partially_Worn_Mask"],
+            values=[0, 0, 0, 0],
+            hole=0.4,
+            color_discrete_sequence=px.colors.sequential.RdBu
+        )
+
+        bar_fig = px.bar(
+            x=["With_Mask", "Without_Mask", "Incorrectly_Worn_Mask", "Partially_Worn_Mask"],
+            y=[0, 0, 0, 0],
+            color=["With_Mask", "Without_Mask", "Incorrectly_Worn_Mask", "Partially_Worn_Mask"],
+            color_discrete_map={
+                "With_Mask": "green",
+                "Without_Mask": "red",
+                "Incorrectly_Worn_Mask": "orange",
+                "Partially_Worn_Mask": "purple",
+            },
+        )
+        bar_fig.update_layout(yaxis_title="人數")
+
+        return dbc.Container([
+            html.H2("📊 歷史口罩辨識統計報告"),
+
+            dbc.Alert("⚠️ 尚無任何辨識資料，請先完成一次辨識", color="warning"),
+
+            dbc.Row([
+                dbc.Col([
+                    html.Label("選擇辨識時間："),
+                    dcc.Dropdown(
+                        id='timestamp-dropdown',
+                        options=[],
+                        placeholder="無可選時間",
+                        disabled=True
+                    )
+                ], width=6),
+                dbc.Col([], width=6)
+            ], className="my-3"),
+
+            dbc.Row([
+                dbc.Col([
+                    html.H5("累計人數統計"),
+                    html.Div([
+                        dbc.Card([dbc.CardBody([html.H4("0"), html.P("總人數")])], color="primary", inverse=True),
+                        dbc.Card([dbc.CardBody([html.H4("0"), html.P("戴口罩")])], color="success", inverse=True),
+                        dbc.Card([dbc.CardBody([html.H4("0"), html.P("未戴口罩")])], color="danger", inverse=True),
+                        dbc.Card([dbc.CardBody([html.H4("0"), html.P("佩戴錯誤")])], color="warning", inverse=True),
+                        dbc.Card([dbc.CardBody([html.H4("0"), html.P("部分遮蓋")])], color="info", inverse=True),
+                    ], className="d-flex gap-3 flex-wrap justify-content-around my-3")
+                ])
+            ]),
+
+            dbc.Row([
+                dbc.Col([dcc.Graph(figure=pie_fig)], md=6),
+                dbc.Col([dcc.Graph(figure=bar_fig)], md=6),
+            ])
+        ])
+    
+    # ⬇️ 有資料的狀況（原本邏輯保留）
     row = df[df['timestamp'] == selected_time]
     if row.empty:
         return html.Div("⚠️ 無此時間點的資料")
     row = row.iloc[0]
 
+    # 圖表同你原本的邏輯
     pie_fig = px.pie(
         names=["With_Mask", "Without_Mask", "Incorrectly_Worn_Mask", "Partially_Worn_Mask"],
         values=[row['With_Mask'], row['Without_Mask'], row['Incorrectly_Worn_Mask'], row['Partially_Worn_Mask']],
@@ -111,6 +172,7 @@ def layout_dashboard(df, selected_time):
         ])
     ])
 
+
 # Dash layout 初始化
 def serve_layout():
     df = fetch_data()
@@ -128,6 +190,8 @@ app.layout = serve_layout
 )
 def update_dashboard(selected_time):
     df = fetch_data()
+    if df.empty or not selected_time:
+        return layout_dashboard(df, selected_time=None)
     return layout_dashboard(df, selected_time)
 
 # CSV 下載路由
