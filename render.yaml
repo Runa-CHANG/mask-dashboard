@@ -10,6 +10,8 @@ services:
         value: 10000
       - key: DB_HOST
         value: your-db-host
+      - key: DB_PORT
+        value: 5432
       - key: DB_NAME
         value: your-db-name
       - key: DB_USER

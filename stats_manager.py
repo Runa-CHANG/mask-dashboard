@@ -44,3 +44,19 @@ def get_aggregated_stats():
     for row in rows:
         result[row['label']] = row['count']
     return result
+
+def upload_summary(data):
+    with get_connection() as conn:
+        with conn.cursor() as cur:
+            cur.execute("""
+                INSERT INTO mask_summary (
+                    timestamp, start_time, end_time, duration,
+                    with_mask, without_mask, incorrectly_worn_mask, partially_worn_mask, total
+                ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
+            """, (
+                data["timestamp"], data["start_time"], data["end_time"], data["duration"],
+                data["With_Mask"], data["Without_Mask"],
+                data["Incorrectly_Worn_Mask"], data["Partially_Worn_Mask"],
+                data["Total"]
+            ))
+        conn.commit()
