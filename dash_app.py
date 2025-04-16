@@ -1,3 +1,4 @@
+# dash_app.py
 import dash
 from dash import dcc, html, Input, Output
 import dash_bootstrap_components as dbc
@@ -6,8 +7,8 @@ import plotly.express as px
 from sqlalchemy import create_engine
 import os
 
-# PostgreSQL 連線資訊 (Render 提供的環境變數)
-DB_URL = os.getenv("DATABASE_URL")  # e.g. postgres://user:pass@host:port/dbname
+# PostgreSQL 連線資訊 (Render 的環境變數)
+DB_URL = os.getenv("DATABASE_URL")
 engine = create_engine(DB_URL)
 
 # 初始化 Dash app
@@ -15,14 +16,18 @@ app = dash.Dash(__name__, external_stylesheets=[dbc.themes.BOOTSTRAP])
 app.title = "口罩辨識歷史統計"
 server = app.server
 
-# 讀取資料函式
+# 資料讀取函式
 def fetch_data():
     query = "SELECT * FROM mask_summary ORDER BY timestamp DESC"
     return pd.read_sql(query, engine)
 
+# 統計圖與卡片 layout
 def layout_dashboard(df, selected_time):
-    row = df[df['timestamp'] == selected_time].iloc[0]
-    
+    row = df[df['timestamp'] == selected_time]
+    if row.empty:
+        return html.Div("⚠️ 無此時間點的資料")
+    row = row.iloc[0]
+
     pie_fig = px.pie(
         names=["With_Mask", "Without_Mask", "Incorrectly_Worn_Mask", "Partially_Worn_Mask"],
         values=[row['With_Mask'], row['Without_Mask'], row['Incorrectly_Worn_Mask'], row['Partially_Worn_Mask']],
@@ -66,7 +71,7 @@ def layout_dashboard(df, selected_time):
             dbc.Col([
                 html.H5("累計人數統計"),
                 html.Div([
-                    dbc.Card([dbc.CardBody([html.H4(int(row['Total']), className="card-title"), html.P("總人數")])], color="primary", inverse=True),
+                    dbc.Card([dbc.CardBody([html.H4(int(row['Total'])), html.P("總人數")])], color="primary", inverse=True),
                     dbc.Card([dbc.CardBody([html.H4(int(row['With_Mask'])), html.P("戴口罩")])], color="success", inverse=True),
                     dbc.Card([dbc.CardBody([html.H4(int(row['Without_Mask'])), html.P("未戴口罩")])], color="danger", inverse=True),
                     dbc.Card([dbc.CardBody([html.H4(int(row['Incorrectly_Worn_Mask'])), html.P("佩戴錯誤")])], color="warning", inverse=True),
@@ -81,7 +86,17 @@ def layout_dashboard(df, selected_time):
         ])
     ])
 
-# 主頁路由
+# Dash layout 初始化
+def serve_layout():
+    df = fetch_data()
+    if df.empty:
+        return html.Div("🚫 無資料可顯示")
+    default_time = df['timestamp'].iloc[0]
+    return layout_dashboard(df, default_time)
+
+app.layout = serve_layout
+
+# Callback：下拉選單變更時更新內容
 @app.callback(
     Output('page-content', 'children'),
     Input('timestamp-dropdown', 'value')
@@ -90,12 +105,7 @@ def update_dashboard(selected_time):
     df = fetch_data()
     return layout_dashboard(df, selected_time)
 
-# App Layout
-@app.callback(Output('page-content', 'children'), Input('timestamp-dropdown', 'value'))
-def update_dashboard(selected_time):
-    df = fetch_data()
-    return layout_dashboard(df, selected_time)
-
+# CSV 下載路由
 @app.server.route("/download/csv")
 def download_csv():
     from flask import request, Response
@@ -109,6 +119,7 @@ def download_csv():
         headers={"Content-disposition": f"attachment; filename=mask_summary_{timestamp}.csv"}
     )
 
+# Excel 下載路由
 @app.server.route("/download/excel")
 def download_excel():
     from flask import request, Response
@@ -126,12 +137,13 @@ def download_excel():
         headers={"Content-disposition": f"attachment; filename=mask_summary_{timestamp}.xlsx"}
     )
 
+# Layout 容器
 app.layout = html.Div([
     dcc.Location(id="url"),
     html.Div(id="page-content")
 ])
 
+# 啟動 Dash App（Render 用 host="0.0.0.0"）
 if __name__ == "__main__":
-    app.run_server(debug=True, port=8050)
-
-
+    port = int(os.environ.get("PORT", 8050))
+    app.run_server(debug=False, host="0.0.0.0", port=port)
