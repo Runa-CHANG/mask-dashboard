@@ -6,19 +6,44 @@ import pandas as pd
 import plotly.express as px
 from sqlalchemy import create_engine
 import os
+from sqlalchemy import Table, Column, Integer, String, DateTime, MetaData
+from sqlalchemy import inspect
+
+# 建立資料表（如果不存在）
+def create_table_if_not_exists(engine):
+    metadata = MetaData()
+    inspector = inspect(engine)
+
+    if "mask_summary" not in inspector.get_table_names():
+        mask_summary = Table(
+            "mask_summary", metadata,
+            Column("id", Integer, primary_key=True, autoincrement=True),
+            Column("timestamp", DateTime),
+            Column("With_Mask", Integer),
+            Column("Without_Mask", Integer),
+            Column("Incorrectly_Worn_Mask", Integer),
+            Column("Partially_Worn_Mask", Integer),
+            Column("Total", Integer),
+            Column("start_time", DateTime),
+            Column("end_time", DateTime),
+        )
+        metadata.create_all(engine)
+        print("✅ Created table 'mask_summary'")
+    else:
+        print("✅ Table 'mask_summary' already exists")
 
 # PostgreSQL 連線資訊 (Render 的環境變數)
 DB_URL = os.getenv("DATABASE_URL")
 engine = create_engine(DB_URL)
 
 # 初始化 Dash app
-app = dash.Dash(__name__, external_stylesheets=[dbc.themes.BOOTSTRAP])
+app = dash.Dash(__name__, external_stylesheets=[dbc.themes.BOOTSTRAP], suppress_callback_exceptions=True)
 app.title = "口罩辨識歷史統計"
 server = app.server
 
 # 資料讀取函式
 def fetch_data():
-    query = "SELECT * FROM mask_summary ORDER BY timestamp DESC"
+    query = "SELECT * FROM mask_summary WHERE timestamp IS NOT NULL ORDER BY timestamp DESC"
     return pd.read_sql(query, engine)
 
 # 統計圖與卡片 layout
@@ -56,7 +81,7 @@ def layout_dashboard(df, selected_time):
                 html.Label("選擇辨識時間："),
                 dcc.Dropdown(
                     id='timestamp-dropdown',
-                    options=[{"label": t, "value": t} for t in df['timestamp']],
+                    options=[{"label": pd.to_datetime(t).strftime('%Y-%m-%d %H:%M:%S'), "value": t} for t in df['timestamp']],
                     value=selected_time,
                     clearable=False
                 ),
@@ -136,6 +161,10 @@ def download_excel():
         mimetype="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
         headers={"Content-disposition": f"attachment; filename=mask_summary_{timestamp}.xlsx"}
     )
+
+
+# 呼叫這個函式來建立表格（放在 app 開始之前）
+create_table_if_not_exists(engine)
 
 # Layout 容器
 app.layout = html.Div([
